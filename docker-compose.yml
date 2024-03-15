@@ -1,0 +1,92 @@
+---
+version: "2"
+services:
+  bookstack:
+    image: lscr.io/linuxserver/bookstack
+    container_name: bookstack
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - APP_URL=https://ms-journal.mastersoft.local
+      - DB_HOST=bookstack_db
+      - DB_PORT=3306
+      - DB_USER=bookstack
+      - DB_PASS=xap7mYF7q6HmF
+      - DB_DATABASE=bookstack
+    volumes:
+      - ./bookstack/bookstack_app_data:/config
+    ports:
+      - 6875:80
+    restart: unless-stopped
+    depends_on:
+      - bookstack_db
+  bookstack_db:
+    image: lscr.io/linuxserver/mariadb
+    container_name: bookstack_db
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - MYSQL_ROOT_PASSWORD=xap7mYF7q6HmF
+      - TZ=Asia/Yekaterinburg
+      - MYSQL_DATABASE=bookstack
+      - MYSQL_USER=bookstack
+      - MYSQL_PASSWORD=xap7mYF7q6HmF
+    volumes:
+      - ./bookstack/bookstack_db_data:/config
+    restart: unless-stopped
+
+  piwigo:
+    image: lscr.io/linuxserver/piwigo:latest
+    container_name: piwigo
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Yekaterinburg
+    volumes:
+      - ./piwigo/config:/config
+      - ./piwigo/gallery:/gallery
+    ports:
+      - 8000:80
+    restart: unless-stopped
+    depends_on:
+      - piwigo_db
+  piwigo_db:
+    image: lscr.io/linuxserver/mariadb:latest
+    container_name: piwigo_db
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Asia/Yekaterinburg
+      - MYSQL_ROOT_PASSWORD=mswebpass
+      - MYSQL_DATABASE=piwigo
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=mswebpass
+    volumes:
+      - ./piwigo/mariadb/config:/config
+    ports:
+      - 3306:3306
+    restart: unless-stopped
+
+#  ffmpeg:
+#    build:
+#      context: .
+#    container_name: ffmpeg
+#    restart: unless-stopped
+
+  proxy:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '81:81'
+    environment:
+      DB_SQLITE_FILE: "/data/database.sqlite"
+    volumes:
+      - ./proxy/data:/data
+      - ./proxy/letsencrypt:/etc/letsencrypt
+
+networks:
+  default:
+    external: true
+    name: masterweb
